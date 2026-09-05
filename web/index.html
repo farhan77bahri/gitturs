@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"/>
+<meta name="color-scheme" content="dark"/>
+<meta name="theme-color" content="#0e0e0e"/>
+<title>AI Chat</title>
+<style>
+:root{
+  --bg:#0e0e0e; --bg2:#171717; --bg3:#212121; --bg4:#2a2a2a;
+  --user:#2f2f2f; --accent:#10a37f; --accent2:#0e8f70; --danger:#ef4444;
+  --text:#ececec; --muted:#9a9a9a; --dim:#6b6b6b; --line:#2c2c2c;
+  --shadow:0 12px 40px rgba(0,0,0,.45);
+  --radius:18px; --safe-t:env(safe-area-inset-top,0px); --safe-b:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--text);
+  font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;
+  overflow:hidden}
+body{padding:0}
+button,textarea,input,select{font:inherit;color:inherit}
+button{border:0;background:none;cursor:pointer}
+.app{display:flex;height:100%;position:relative}
+.sidebar{width:300px;max-width:86vw;background:var(--bg2);display:flex;flex-direction:column;
+  border-inline-end:1px solid var(--line);z-index:40;flex-shrink:0}
+.sb-top{padding:14px 12px;padding-top:calc(14px + var(--safe-t));display:flex;gap:8px;align-items:center}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:-.02em;flex:1}
+.logo-mark{width:32px;height:32px;border-radius:10px;background:linear-gradient(145deg,#13c38f,#0a7a62);
+  display:grid;place-items:center;box-shadow:0 0 18px rgba(16,163,127,.35)}
+.logo-mark svg{width:18px;height:18px}
+.btn-new{width:100%;margin:0 12px 12px;padding:11px 14px;border-radius:12px;background:var(--bg3);
+  border:1px solid var(--line);display:flex;align-items:center;gap:10px;color:var(--text);font-weight:600}
+.btn-new:hover{background:var(--bg4)}
+.chats{flex:1;overflow:auto;padding:4px 8px 8px}
+.chat-item{padding:11px 12px;border-radius:12px;display:flex;align-items:center;gap:10px;margin:2px 0;color:var(--muted)}
+.chat-item.active,.chat-item:hover{background:var(--bg3);color:var(--text)}
+.chat-item .t{flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:14px}
+.chat-item .del{opacity:0;width:28px;height:28px;border-radius:8px;color:var(--muted)}
+.chat-item:hover .del,.chat-item.active .del{opacity:1}
+.chat-item .del:hover{background:#3a1a1a;color:var(--danger)}
+.sb-bot{padding:10px 12px calc(12px + var(--safe-b));border-top:1px solid var(--line)}
+.sb-btn{width:100%;padding:10px 12px;border-radius:12px;display:flex;align-items:center;gap:10px;color:var(--text)}
+.sb-btn:hover{background:var(--bg3)}
+.main{flex:1;display:flex;flex-direction:column;min-width:0;background:var(--bg);position:relative}
+.topbar{height:calc(56px + var(--safe-t));padding:0 10px;padding-top:var(--safe-t);display:flex;align-items:center;gap:6px;
+  border-bottom:1px solid transparent;position:absolute;top:0;left:0;right:0;z-index:10;
+  background:linear-gradient(var(--bg) 70%, transparent)}
+.icon-btn{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;color:var(--text)}
+.icon-btn:hover{background:var(--bg3)}
+.top-title{flex:1;text-align:center;font-weight:600;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.model-chip{display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:var(--bg3);
+  border:1px solid var(--line);font-size:12px;color:var(--muted);max-width:46%}
+.model-chip b{color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px}
+.messages{flex:1;overflow:auto;padding:72px 0 8px}
+.wrap{max-width:820px;margin:0 auto;padding:0 16px}
+.welcome{min-height:58vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px}
+.welcome h1{font-size:28px;font-weight:700;letter-spacing:-.03em;margin:8px 0 4px}
+.welcome p{color:var(--muted);margin:0 0 18px;font-size:15px}
+.sugs{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:min(640px,100%)}
+.sug{text-align:start;padding:14px 14px;border-radius:16px;background:var(--bg3);border:1px solid var(--line);color:var(--text);font-size:13.5px;line-height:1.5}
+.sug:hover{border-color:#3d3d3d;background:#252525}
+.msg{display:flex;gap:12px;padding:14px 0;align-items:flex-start}
+.av{width:32px;height:32px;border-radius:10px;flex-shrink:0;display:grid;place-items:center;margin-top:2px}
+.av.user{background:#3b3b3b}
+.av.ai{background:linear-gradient(145deg,#13c38f,#0a7a62)}
+.bubble{flex:1;min-width:0;line-height:1.7;font-size:15.5px}
+.bubble.user-b{background:var(--user);border-radius:18px 18px 6px 18px;padding:10px 14px;max-width:85%;margin-inline-start:auto}
+.msg.user{flex-direction:row-reverse}
+[dir=ltr] .msg.user{flex-direction:row-reverse}
+.msg.user .av{display:none}
+.think{margin:0 0 10px;border:1px solid var(--line);background:#161616;border-radius:14px;overflow:hidden}
+.think-h{display:flex;align-items:center;gap:8px;padding:8px 12px;color:var(--muted);font-size:13px;width:100%;text-align:start}
+.think-b{padding:0 12px 10px;color:#b8b8b8;font-size:13px;white-space:pre-wrap}
+.md p{margin:0 0 .7em}
+.md p:last-child{margin:0}
+.md h1,.md h2,.md h3{margin:1em 0 .4em;line-height:1.3}
+.md h1{font-size:1.35em}.md h2{font-size:1.2em}.md h3{font-size:1.08em}
+.md ul,.md ol{margin:.3em 0 .8em;padding-inline-start:1.3em}
+.md code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#2a2a2a;padding:.12em .4em;border-radius:6px;font-size:.9em}
+.md pre{background:#151515;border:1px solid var(--line);border-radius:14px;padding:12px 14px;overflow:auto;margin:.6em 0}
+.md pre code{background:none;padding:0;font-size:13px}
+.md a{color:#5eead4}
+.md blockquote{margin:.5em 0;padding:0 12px;border-inline-start:3px solid var(--accent);color:var(--muted)}
+.cursor{display:inline-block;width:8px;height:1.05em;background:var(--accent);border-radius:2px;margin-inline-start:3px;vertical-align:-3px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.composer-dock{padding:8px 12px calc(10px + var(--safe-b));background:linear-gradient(transparent,var(--bg) 28%)}
+.composer{max-width:820px;margin:0 auto;background:var(--bg3);border:1px solid #333;border-radius:26px;
+  display:flex;align-items:flex-end;gap:6px;padding:6px 6px 6px 8px;box-shadow:var(--shadow)}
+.composer textarea{flex:1;resize:none;background:transparent;border:0;outline:0;max-height:160px;min-height:44px;
+  padding:10px 8px;line-height:1.45}
+.composer textarea::placeholder{color:var(--dim)}
+.send{width:40px;height:40px;border-radius:50%;background:var(--accent);color:#06281f;display:grid;place-items:center;flex-shrink:0}
+.send:disabled{background:#2d2d2d;color:#666}
+.send.stop{background:#3a3a3a;color:#fff}
+.hint{text-align:center;color:var(--dim);font-size:11px;margin-top:8px}
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:30;display:none}
+.scrim.show{display:block}
+@media(max-width:860px){
+  .sidebar{position:fixed;top:0;bottom:0;inset-inline-start:0;transform:translateX(110%);transition:transform .22s ease;box-shadow:var(--shadow)}
+  [dir=ltr] .sidebar{transform:translateX(-110%)}
+  .sidebar.open{transform:none}
+  .sugs{grid-template-columns:1fr}
+  .menu-only{display:grid}
+}
+@media(min-width:861px){
+  .menu-only{display:none}
+  .scrim{display:none !important}
+}
+.modal{position:fixed;inset:0;z-index:50;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.5)}
+.modal.show{display:flex}
+.sheet{width:min(560px,100%);max-height:92vh;overflow:auto;background:var(--bg2);border-radius:20px 20px 0 0;padding:8px 18px calc(18px + var(--safe-b));
+  border:1px solid var(--line);border-bottom:0}
+.handle{width:40px;height:4px;background:#444;border-radius:4px;margin:8px auto 12px}
+.sheet h2{margin:0 0 14px;font-size:18px}
+.field{margin:0 0 12px}
+.field label{display:block;font-size:12px;color:var(--muted);margin:0 0 6px}
+.field input,.field textarea,.field select{width:100%;background:var(--bg3);border:1px solid var(--line);border-radius:12px;padding:11px 12px;outline:0}
+.field textarea{min-height:80px;resize:vertical}
+.presets{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.preset{padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:var(--bg3);font-size:13px}
+.preset.on{background:#113c32;border-color:#1d6b57;color:#7ee7c7}
+.row{display:flex;gap:8px}
+.row .field{flex:1}
+.save{width:100%;padding:12px;border-radius:14px;background:var(--accent);color:#06281f;font-weight:700;margin-top:8px}
+.err{color:#fca5a5;background:#3a1515;border:1px solid #7f1d1d;padding:10px 12px;border-radius:12px;margin:8px 0;font-size:13px;display:none}
+.toast{position:fixed;bottom:calc(88px + var(--safe-b));left:50%;transform:translateX(-50%);background:#333;padding:8px 14px;border-radius:999px;font-size:13px;display:none;z-index:60}
+svg.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="scrim" id="scrim"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-top">
+      <div class="logo">
+        <div class="logo-mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 3l1.8 4.8L19 9.6l-4.2 3 1.2 5.2L12 15.6 8 17.8l1.2-5.2L5 9.6l5.2-1.8L12 3z"/></svg>
+        </div>
+        <span id="brand">AI Chat</span>
+      </div>
+      <button class="icon-btn menu-only" id="closeSb" aria-label="close">
+        <svg class="i" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <button class="btn-new" id="btnNew">
+      <svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      <span data-i="newChat">چت جدید</span>
+    </button>
+    <div class="chats" id="chatList"></div>
+    <div class="sb-bot">
+      <button class="sb-btn" id="btnSettings">
+        <svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9c.3.6.9 1 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+        <span data-i="settings">تنظیمات</span>
+      </button>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="topbar">
+      <button class="icon-btn menu-only" id="openSb">
+        <svg class="i" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <div class="top-title" id="topTitle">AI Chat</div>
+      <button class="model-chip" id="modelChip" title="model">
+        <b id="modelLabel">GPT</b>
+        <svg class="i" style="width:14px;height:14px" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+    </div>
+    <div class="messages" id="messages"></div>
+    <div class="composer-dock">
+      <div class="wrap">
+        <div class="composer">
+          <textarea id="input" rows="1" placeholder="پیامی بنویسید…"></textarea>
+          <button class="send" id="btnSend" disabled>
+            <svg class="i" viewBox="0 0 24 24" id="sendIcon"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+          </button>
+        </div>
+        <div class="hint" data-i="hint">پاسخ‌ها توسط مدل انتخابی شما تولید می‌شوند</div>
+      </div>
+    </div>
+  </main>
+</div>
+<div class="modal" id="settings">
+  <div class="sheet">
+    <div class="handle"></div>
+    <h2 data-i="settings">تنظیمات</h2>
+    <div class="presets" id="presets"></div>
+    <div class="field"><label data-i="apiKey">کلید API</label><input id="sKey" type="password" autocomplete="off"/></div>
+    <div class="field"><label data-i="baseUrl">آدرس Base URL</label><input id="sBase"/></div>
+    <div class="row">
+      <div class="field"><label data-i="model">مدل</label><input id="sModel"/></div>
+      <div class="field"><label data-i="thinking">تفکر</label>
+        <select id="sThink">
+          <option value="auto">Auto</option>
+          <option value="off">Off</option>
+          <option value="low">Low</option>
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+          <option value="max">Max</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><label data-i="system">System prompt</label><textarea id="sSystem"></textarea></div>
+    <div class="field"><label data-i="lang">زبان</label>
+      <select id="sLang"><option value="fa">فارسی</option><option value="en">English</option></select>
+    </div>
+    <button class="save" id="btnSave" data-i="save">ذخیره</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const PRESETS = [
+  {id:'openai', name:'OpenAI', base:'https://api.openai.com/v1', model:'gpt-4o-mini'},
+  {id:'gemini', name:'Gemini', base:'https://generativelanguage.googleapis.com/v1beta/openai', model:'gemini-2.0-flash'},
+  {id:'deepseek', name:'DeepSeek', base:'https://api.deepseek.com/v1', model:'deepseek-chat'},
+  {id:'ollama', name:'Ollama', base:'http://127.0.0.1:11434/v1', model:'llama3.1'},
+  {id:'zai', name:'Z.ai GLM', base:'https://api.z.ai/api/paas/v4', model:'glm-4.6'}
+];
+const I18N = {
+  fa:{ newChat:'چت جدید', settings:'تنظیمات', apiKey:'کلید API', baseUrl:'آدرس Base URL', model:'مدل',
+    thinking:'تفکر', system:'دستور سیستم', lang:'زبان', save:'ذخیره', hint:'پاسخ‌ها توسط مدل انتخابی شما تولید می‌شوند',
+    ph:'پیامی بنویسید…', welcome:'چطور می‌تونم کمک کنم؟', welcomeSub:'یک مدل انتخاب کنید و بپرسید',
+    needKey:'اول کلید API را در تنظیمات وارد کنید', stopped:'متوقف شد', copied:'کپی شد',
+    sug:['یک ایده برای پروژه بده','این متن را خلاصه کن','کد را توضیح بده','برنامه روزانه پیشنهاد بده']},
+  en:{ newChat:'New chat', settings:'Settings', apiKey:'API key', baseUrl:'Base URL', model:'Model',
+    thinking:'Thinking', system:'System prompt', lang:'Language', save:'Save', hint:'Answers are generated by your selected model',
+    ph:'Message…', welcome:'How can I help you?', welcomeSub:'Pick a model and ask anything',
+    needKey:'Add your API key in Settings first', stopped:'Stopped', copied:'Copied',
+    sug:['Give me a project idea','Summarize this text','Explain this code','Suggest a daily plan']}
+};
+const $ = id => document.getElementById(id);
+let S = load('zchat_settings', {preset:'openai', apiKey:'', baseUrl:PRESETS[0].base, model:PRESETS[0].model, system:'', thinking:'auto', lang:'fa'});
+let chats = load('zchat_chats', []);
+let current = chats[0]?.id || null;
+let abort = null, generating = false;
+
+function load(k, d){ try{ return JSON.parse(localStorage.getItem(k)) ?? d }catch(e){ return d } }
+function save(k,v){ localStorage.setItem(k, JSON.stringify(v)) }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7) }
+function t(k){ return (I18N[S.lang]||I18N.fa)[k] }
+function toast(m){ const e=$('toast'); e.textContent=m; e.style.display='block'; setTimeout(()=>e.style.display='none',1600) }
+function applyLang(){
+  const L=I18N[S.lang]||I18N.fa;
+  document.documentElement.lang=S.lang; document.documentElement.dir=S.lang==='fa'?'rtl':'ltr';
+  document.querySelectorAll('[data-i]').forEach(el=>{ const k=el.getAttribute('data-i'); if(L[k]) el.textContent=L[k] });
+  $('input').placeholder=L.ph;
+}
+function applyPreset(id, fill=true){
+  const p=PRESETS.find(x=>x.id===id)||PRESETS[0];
+  S.preset=p.id; if(fill){ S.baseUrl=p.base; S.model=p.model }
+}
+function endpoint(base){
+  let b=(base||'').trim().replace(/\/+$/,'');
+  if(!b) return '';
+  if(b.endsWith('/chat/completions')) return b;
+  return b+'/chat/completions';
+}
+function renderSidebar(){
+  const box=$('chatList'); box.innerHTML='';
+  chats.forEach(c=>{
+    const el=document.createElement('div');
+    el.className='chat-item'+(c.id===current?' active':'');
+    el.innerHTML=`<span class="t">${esc(c.title||t('newChat'))}</span><button class="del" title="del">✕</button>`;
+    el.onclick=e=>{ if(e.target.classList.contains('del')){ delChat(c.id); return } openChat(c.id); closeSb() };
+    box.appendChild(el);
+  });
+  $('modelLabel').textContent = S.model || 'model';
+}
+function cur(){ return chats.find(c=>c.id===current) }
+function openChat(id){ current=id; renderSidebar(); renderMessages(); }
+function newChat(){
+  const c={id:uid(), title:t('newChat'), messages:[]};
+  chats.unshift(c); current=c.id; save('zchat_chats', chats); renderSidebar(); renderMessages(); closeSb();
+}
+function delChat(id){
+  chats=chats.filter(c=>c.id!==id);
+  if(current===id) current=chats[0]?.id||null;
+  if(!current) newChat(); else { save('zchat_chats',chats); renderSidebar(); renderMessages() }
+}
+function closeSb(){ $('sidebar').classList.remove('open'); $('scrim').classList.remove('show') }
+function openSb(){ $('sidebar').classList.add('open'); $('scrim').classList.add('show') }
+
+function esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) }
+function md(src){
+  src=String(src||'');
+  const codes=[];
+  src=src.replace(/```(\w+)?\n?([\s\S]*?)```/g,(_,lang,code)=>{ codes.push(`<pre><code>${esc(code)}</code></pre>`); return `\u0000C${codes.length-1}\u0000` });
+  let html=esc(src);
+  html=html.replace(/^### (.*)$/gm,'<h3>$1</h3>').replace(/^## (.*)$/gm,'<h2>$1</h2>').replace(/^# (.*)$/gm,'<h1>$1</h1>');
+  html=html.replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>').replace(/`([^`]+)`/g,'<code>$1</code>');
+  html=html.replace(/^\s*[-*] (.*)$/gm,'<li>$1</li>');
+  html=html.replace(/(<li>.*<\/li>\n?)+/g,m=>`<ul>${m}</ul>`);
+  html=html.replace(/\n{2,}/g,'</p><p>').replace(/\n/g,'<br>');
+  html='<p>'+html+'</p>';
+  html=html.replace(/\u0000C(\d+)\u0000/g,(_,i)=>codes[+i]);
+  return html;
+}
+function welcomeView(){
+  const L=I18N[S.lang]||I18N.fa;
+  return `<div class="welcome">
+    <div class="logo-mark" style="width:52px;height:52px;border-radius:16px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" width="28" height="28"><path d="M12 3l1.8 4.8L19 9.6l-4.2 3 1.2 5.2L12 15.6 8 17.8l1.2-5.2L5 9.6l5.2-1.8L12 3z"/></svg>
+    </div>
+    <h1>${L.welcome}</h1>
+    <p>${L.welcomeSub}</p>
+    <div class="sugs">${L.sug.map(s=>`<button class="sug" onclick="ask(this.textContent)">${esc(s)}</button>`).join('')}</div>
+  </div>`;
+}
+function renderMessages(){
+  const box=$('messages'); const c=cur();
+  if(!c || !c.messages.length){ box.innerHTML=`<div class="wrap">${welcomeView()}</div>`; $('topTitle').textContent='AI Chat'; return }
+  $('topTitle').textContent=c.title||'AI Chat';
+  box.innerHTML='<div class="wrap" id="msgWrap"></div>';
+  const w=$('msgWrap');
+  c.messages.forEach(m=>w.appendChild(msgEl(m)));
+  box.scrollTop=box.scrollHeight;
+}
+function msgEl(m){
+  const d=document.createElement('div');
+  d.className='msg '+(m.role==='user'?'user':'ai');
+  const think = m.reasoning ? `<div class="think"><button class="think-h">✦ ${S.lang==='fa'?'در حال فکر':'Thinking'}</button><div class="think-b">${esc(m.reasoning)}</div></div>` : '';
+  if(m.role==='user'){
+    d.innerHTML=`<div class="bubble user-b">${esc(m.content)}</div>`;
+  } else {
+    d.innerHTML=`<div class="av ai"><svg class="i" viewBox="0 0 24 24" style="stroke:#fff;width:16px;height:16px"><path d="M12 3l1.8 4.8L19 9.6l-4.2 3 1.2 5.2L12 15.6 8 17.8l1.2-5.2L5 9.6l5.2-1.8L12 3z"/></svg></div>
+      <div class="bubble">${think}<div class="md">${m.pending?'':md(m.content)}${m.pending?'<span class="cursor"></span>':''}</div></div>`;
+  }
+  return d;
+}
+function persist(){ save('zchat_chats', chats); save('zchat_settings', S) }
+
+function setGenerating(on){
+  generating=on;
+  const b=$('btnSend');
+  b.classList.toggle('stop', on);
+  b.disabled = on ? false : !$('input').value.trim();
+  $('sendIcon').innerHTML = on ? '<path d="M6 6h12v12H6z"/>' : '<path d="M12 19V5M5 12l7-7 7 7"/>';
+}
+function ask(text){ $('input').value=text; $('input').dispatchEvent(new Event('input')); send() }
+
+async function send(){
+  if(generating){ abort?.abort(); return }
+  const text=$('input').value.trim(); if(!text) return;
+  if(!S.apiKey){ openSettings(); toast(t('needKey')); return }
+  if(!current) newChat();
+  const c=cur();
+  if(!c.messages.length) c.title = text.slice(0,42);
+  c.messages.push({role:'user', content:text});
+  $('input').value=''; autosize(); $('btnSend').disabled=true;
+  const asst={role:'assistant', content:'', reasoning:'', pending:true};
+  c.messages.push(asst);
+  persist(); renderMessages();
+  setGenerating(true);
+  abort=new AbortController();
+  try{
+    await stream(c, asst, abort.signal);
+  }catch(e){
+    if(e.name==='AbortError'){ asst.content += asst.content ? '' : t('stopped'); }
+    else { asst.content = asst.content || ('⚠️ '+(e.message||e)); }
+  }
+  asst.pending=false; persist(); renderMessages(); setGenerating(false); abort=null;
+}
+
+function thinkingPayload(){
+  const mode=S.thinking||'auto';
+  const host=(S.baseUrl||'').toLowerCase();
+  const extra={};
+  if(host.includes('z.ai')||host.includes('bigmodel')||host.includes('zhipu')){
+    if(mode==='off') extra.thinking={type:'disabled'};
+    else extra.thinking={type:'enabled'};
+  }
+  if(mode!=='auto' && mode!=='off') extra.reasoning_effort=mode;
+  if(mode==='off') extra.enable_thinking=false;
+  return extra;
+}
+
+async function stream(c, asst, signal){
+  const url=endpoint(S.baseUrl);
+  const msgs=[];
+  if(S.system) msgs.push({role:'system', content:S.system});
+  c.messages.filter(m=>m!==asst).forEach(m=>msgs.push({role:m.role, content:m.content}));
+  const body={model:S.model, messages:msgs, stream:true, ...thinkingPayload()};
+  const res=await fetch(url,{
+    method:'POST', signal,
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+S.apiKey,'Accept':'text/event-stream'},
+    body:JSON.stringify(body)
+  });
+  if(!res.ok){
+    let err=await res.text();
+    try{ const j=JSON.parse(err); err=j.error?.message||j.message||err }catch(_){}
+    throw new Error((res.status+' ')+err.slice(0,400));
+  }
+  const reader=res.body.getReader(); const dec=new TextDecoder(); let buf='';
+  const box=$('messages');
+  const paint=()=>{
+    const last=document.querySelector('.msg.ai:last-child .md');
+    if(last) last.innerHTML = md(asst.content)+(asst.pending?'<span class="cursor"></span>':'');
+    const th=document.querySelector('.msg.ai:last-child .think-b');
+    if(asst.reasoning){
+      if(th) th.textContent=asst.reasoning;
+      else {
+        const b=document.querySelector('.msg.ai:last-child .bubble');
+        if(b && !b.querySelector('.think')){
+          b.insertAdjacentHTML('afterbegin', `<div class="think"><button class="think-h">✦</button><div class="think-b">${esc(asst.reasoning)}</div></div>`);
+        }
+      }
+    }
+    box.scrollTop=box.scrollHeight;
+  };
+  while(true){
+    const {done,value}=await reader.read(); if(done) break;
+    buf+=dec.decode(value,{stream:true});
+    const parts=buf.split('\n'); buf=parts.pop();
+    for(const line of parts){
+      const s=line.trim(); if(!s.startsWith('data:')) continue;
+      const data=s.slice(5).trim(); if(data==='[DONE]') return;
+      try{
+        const j=JSON.parse(data);
+        const d=j.choices?.[0]?.delta||{};
+        if(d.reasoning_content) asst.reasoning+=d.reasoning_content;
+        if(d.reasoning) asst.reasoning+=d.reasoning;
+        if(d.content) asst.content+=d.content;
+        paint();
+      }catch(_){}
+    }
+  }
+}
+
+function autosize(){
+  const ta=$('input'); ta.style.height='auto'; ta.style.height=Math.min(ta.scrollHeight,160)+'px';
+  $('btnSend').disabled = generating ? false : !ta.value.trim();
+}
+function openSettings(){
+  $('sKey').value=S.apiKey||''; $('sBase').value=S.baseUrl||''; $('sModel').value=S.model||'';
+  $('sThink').value=S.thinking||'auto'; $('sSystem').value=S.system||''; $('sLang').value=S.lang||'fa';
+  $('presets').innerHTML=PRESETS.map(p=>`<button class="preset ${p.id===S.preset?'on':''}" data-p="${p.id}">${p.name}</button>`).join('');
+  $('settings').classList.add('show');
+}
+function closeSettings(){ $('settings').classList.remove('show') }
+
+$('btnNew').onclick=newChat;
+$('openSb').onclick=openSb;
+$('closeSb').onclick=closeSb;
+$('scrim').onclick=closeSb;
+$('btnSettings').onclick=()=>{ closeSb(); openSettings() };
+$('modelChip').onclick=openSettings;
+$('settings').onclick=e=>{ if(e.target.id==='settings') closeSettings() };
+$('presets').onclick=e=>{
+  const id=e.target.dataset.p; if(!id) return;
+  applyPreset(id,true); $('sBase').value=S.baseUrl; $('sModel').value=S.model;
+  [...$('presets').children].forEach(x=>x.classList.toggle('on', x.dataset.p===id));
+};
+$('btnSave').onclick=()=>{
+  S.apiKey=$('sKey').value.trim(); S.baseUrl=$('sBase').value.trim(); S.model=$('sModel').value.trim();
+  S.thinking=$('sThink').value; S.system=$('sSystem').value; S.lang=$('sLang').value;
+  persist(); applyLang(); renderSidebar(); renderMessages(); closeSettings();
+};
+$('input').addEventListener('input', autosize);
+$('input').addEventListener('keydown', e=>{
+  if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); send() }
+});
+$('btnSend').onclick=send;
+
+applyLang();
+if(!chats.length) newChat(); else { renderSidebar(); renderMessages() }
+autosize();
+</script>
+</body>
+</html>

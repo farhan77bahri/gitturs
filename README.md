@@ -1,1 +1,24 @@
-# gitturs
+# AI Chat — تم تیره مدرن
+
+نسخهٔ بازطراحی‌شده با محیط کار شبیه ChatGPT / Claude:
+
+- تم کاملاً تیره
+- سایدبار چت‌ها
+- حباب پیام، استریم، مارک‌داون
+- تنظیمات مدل: OpenAI، Gemini، DeepSeek، Ollama، Z.ai
+- فارسی / English
+
+## نصب
+
+فایل را روی گوشی کپی کنید و نصب کنید:
+
+**[AIChat-dark.apk](AIChat-dark.apk)**
+
+- پکیج: `com.zchat.app`
+- نسخه: `3.0` (versionCode 17)
+- حداقل اندروید: 5.0 (API 21)
+
+بعد از نصب، از **تنظیمات** کلید API و مدل را وارد کنید.
+
+سورس رابط: `web/index.html`  
+اسکریپت ساخت APK: `tools/build_apk.py`

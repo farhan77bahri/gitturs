@@ -20,7 +20,7 @@ from cryptography.x509.oid import NameOID
 ROOT = Path("/home/user/gitturs")
 WEB = ROOT / "web" / "index.html"
 ICON = ROOT / "web" / "icon.png"
-ORIG = Path("/tmp/apk_extract")
+BASE_APK = ROOT / "AIChat (17).apk"
 OUT = ROOT / "AIChat-dark.apk"
 
 # ---------------------------------------------------------------------------
@@ -843,7 +843,10 @@ def build_manifest() -> bytes:
         return struct.pack("<HBBI", 8, 0, dtype, data & 0xFFFFFFFF)
 
     def attr(name, dtype, data, raw=-1, ns=True):
-        nsi = sp("android") if ns else -1
+        # The attribute namespace slot holds the *URI* string index, not the
+        # prefix. Pointing it at "android" made PackageManager fail to resolve
+        # android:name / minSdkVersion / exported, so the package never parsed.
+        nsi = sp(ANDROID_NS) if ns else -1
         if dtype == TYPE_STRING and raw == -1:
             raw = data
         return struct.pack("<iii", nsi, sp(name), raw) + tv(dtype, data)
@@ -902,13 +905,13 @@ def build_manifest() -> bytes:
         start(
             "application",
             [
-                attr("theme", TYPE_REF, 0x0103000F),  # Theme.Black.NoTitleBar
+                attr("theme", TYPE_REF, 0x7F070002),  # AppTheme from resources.arsc
                 attr("label", TYPE_REF, 0x7F060001),
                 attr("icon", TYPE_REF, 0x7F050000),
                 attr("allowBackup", TYPE_BOOL, 0),
+                attr("hardwareAccelerated", TYPE_BOOL, 0xFFFFFFFF),
                 attr("supportsRtl", TYPE_BOOL, 0xFFFFFFFF),
                 attr("usesCleartextTraffic", TYPE_BOOL, 0xFFFFFFFF),
-                attr("hardwareAccelerated", TYPE_BOOL, 0xFFFFFFFF),
             ],
         )
     )
@@ -920,8 +923,8 @@ def build_manifest() -> bytes:
             [
                 attr("name", TYPE_STRING, sp(".MainActivity")),
                 attr("exported", TYPE_BOOL, 0xFFFFFFFF),
-                attr("windowSoftInputMode", TYPE_INT, 0x10),  # adjustResize
                 attr("configChanges", TYPE_INT, cfg),
+                attr("windowSoftInputMode", TYPE_INT, 0x10),  # adjustResize
             ],
         )
     )
@@ -1199,7 +1202,10 @@ def v2_sign(apk: bytes, cert, key) -> bytes:
     signature = key.sign(signed_data, padding.PKCS1v15(), hashes.SHA256())
     pub = key.public_key().public_bytes(Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo)
     signer = lp(signed_data) + lp(lp(struct.pack("<I", ALG) + lp(signature))) + lp(pub)
-    sig_block_value = lp(signer)  # sequence of signers
+    # The v2 block value is a length-prefixed *sequence* of length-prefixed
+    # signers, i.e. two levels of prefixes. Emitting only one made every
+    # Android package parser reject the APK ("problem parsing the package").
+    sig_block_value = lp(lp(signer))
     # ID-value pair
     pair = struct.pack("<I", 0x7109871A) + sig_block_value
     pair_lp = struct.pack("<Q", len(pair)) + pair
@@ -1245,7 +1251,8 @@ def main():
     html = WEB.read_bytes()
     dex = _build_dex_with_own_methods()
     manifest = build_manifest()
-    arsc = (ORIG / "resources.arsc").read_bytes()
+    with zipfile.ZipFile(BASE_APK) as z:
+        arsc = z.read("resources.arsc")
 
     files = {
         "AndroidManifest.xml": manifest,
@@ -1261,8 +1268,8 @@ def main():
         "mipmap-xxhdpi-v4",
         "mipmap-xxxhdpi-v4",
     ]:
-        src = ORIG / "res" / folder / "ic_launcher.png"
-        files[f"res/{folder}/ic_launcher.png"] = src.read_bytes()
+        with zipfile.ZipFile(BASE_APK) as z:
+            files[f"res/{folder}/ic_launcher.png"] = z.read(f"res/{folder}/ic_launcher.png")
 
     print("dex", len(dex), "manifest", len(manifest), "html", len(html))
     cert, key = make_cert()
